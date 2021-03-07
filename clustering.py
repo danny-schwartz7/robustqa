@@ -46,7 +46,7 @@ def text_process(text):
     nopunc = [char for char in text if char not in string.punctuation]
     nopunc = ''.join([i for i in nopunc if not i.isdigit()])
     nopunc =  [word.lower() for word in nopunc.split() if word not in stopwords.words('english')]
-    return [stemmer.lemmatize(word) for word in nopunc]
+    return ' '.join([stemmer.lemmatize(word) for word in nopunc])
 
 def get_hash_str(text):
     md_object = hashlib.md5(text.encode())
