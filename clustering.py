@@ -70,8 +70,8 @@ def main():
 
     all_data = {}
     for i in data:
-	data_dict = ds.read_squad(i, 'save', args['save_dir'])
-	all_data = ds.merge(data_dict, all_data)
+        data_dict = ds.read_squad(i, 'save', args['save_dir'])
+        all_data = ds.merge(data_dict, all_data)
 
     X_train = list(set(all_data['context']))
     # get custom features before modifying contexts
@@ -95,7 +95,7 @@ def main():
     modelkmeans20 = km.fit(k_means_features)
     kmeans_dict = {get_hash_str(all_train[idx]): label for idx, label in enumerate(all_modelkmeans20.labels_)}
 
-    with open('save/topic_id_pair_kmeans', 'w') as f:
+    with open('save/topic_id_pair_kmeans20_1000', 'w') as f:
         json.dump(kmeans_dict, f)
     '''
     K = range(4,100)
