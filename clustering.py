@@ -6,10 +6,11 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import TruncatedSVD
 import matplotlib.pyplot as plt
 import args as args_dependency
-import dataset
+import dataset as ds
 import string
 from typing import List
 import numpy as np
+import json
 
 from features.FeatureFunction import FeatureFunction
 from features.AvgSentenceLen import AvgSentenceLen
@@ -44,6 +45,10 @@ def text_process(text):
     nopunc =  [word.lower() for word in nopunc.split() if word not in stopwords.words('english')]
     return [stemmer.lemmatize(word) for word in nopunc]
 
+def get_hash_str(text):
+    md_object = hashlib.md5(text.encode())
+    return md_object.hexdigest()
+
 def normalize_matrix_so_cols_have_zero_mean_unit_variance(mtx: np.ndarray) -> np.ndarray:
     mtx -= np.mean(mtx, axis=0).reshape(1, -1)
     mtx /= np.std(mtx, axis=0).reshape(1, -1)
@@ -56,9 +61,19 @@ def main():
     nltk.download('wordnet')
 
     # read data
-    data = dataset.read_squad("datasets_augmented/indomain_train/squad_subset", args['save_dir'])
-    X_train = data['context']
+    data = ['datasets/indomain_train/squad',
+	   'datasets/indomain_train/nat_questions',
+	   'datasets/indomain_train/newsqa',
+	   'datasets/oodomain_train/duorc',
+	   'datasets/oodomain_train/race',
+	   'datasets/oodomain_train/relation_extraction']
 
+    all_data = {}
+    for i in data:
+	data_dict = ds.read_squad(i, 'save', args['save_dir'])
+	all_data = ds.merge(data_dict, all_data)
+
+    X_train = list(set(all_data['context']))
     # get custom features before modifying contexts
     custom_features = extract_custom_features(X_train)
 
@@ -76,6 +91,13 @@ def main():
     k_means_features = normalize_matrix_so_cols_have_zero_mean_unit_variance(raw_k_means_features)
 
     # Cluster the training sentences with K-means technique
+    km = KMeans(n_clusters=20)
+    modelkmeans20 = km.fit(k_means_features)
+    kmeans_dict = {get_hash_str(all_train[idx]): label for idx, label in enumerate(all_modelkmeans20.labels_)}
+
+    with open('save/topic_id_pair_kmeans', 'w') as f:
+        json.dump(kmeans_dict, f)
+    '''
     K = range(4,100)
     Sum_of_squared_distances = []
     for k in K:
@@ -88,6 +110,7 @@ def main():
     plt.ylabel('Sum_of_squared_distances')
     plt.title('Elbow Method For Optimal k')
     plt.show()
+    '''
 
 
 if __name__ == "__main__":
