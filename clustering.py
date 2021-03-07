@@ -13,6 +13,7 @@ import numpy as np
 import json
 import hashlib
 import pickle
+import os
 
 from features.FeatureFunction import FeatureFunction
 from features.AvgSentenceLen import AvgSentenceLen
@@ -82,9 +83,16 @@ def main():
     #Vectorisation : -
     #https://scikit-learn.org/stable/modules/decomposition.html#lsa
     #tfidfconvert = TfidfVectorizer(analyzer=text_process).fit(X_train)
-    tfidfconvert = TfidfVectorizer(analyzer=text_process, sublinear_tf=True, max_df=0.7, min_df=0.0001).fit(X_train)
+    cached_processed = 'save/all_train_text_processed' 
+    if os.path.exists(cached_processed):
+        X_train_processed = pickle.load(open(cached_processed, 'rb'))
+    else:
+        X_train_processed = [text_process(item) for item in X_train]
+        pickle.dump(X_train_processed, open(cached_processed, 'wb'))
 
-    X_transformed=tfidfconvert.transform(X_train)
+    tfidfconvert = TfidfVectorizer(max_features=1000, sublinear_tf=True, max_df=0.7, min_df=0.0001).fit(X_train_processed)
+
+    X_transformed=tfidfconvert.transform(X_train_processed)
     pickle.dump(tfidfconvert, open("save/tfidf_max07_min00001.pickle", "wb"))
     pickle.dump(X_transformed, open("save/train_text_features_max07_min00001.pickle", "wb"))
 
