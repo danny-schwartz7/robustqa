@@ -66,8 +66,9 @@ def main():
     MIN_DF = args['min_df']
     MAX_FEATURES = args['max_features']
     N_CLUSTER = args['num_clusters']
-    label = f"n{N_CLUSTER}_feature{MAX_FEATURES}_mindf{MIN_DF}_maxdf{MAX_DF}"
-    X_transformed_pick = f"save/train_text_{label}.pickle"
+    sub_label = f"feature{MAX_FEATURES}_mindf{MIN_DF}_maxdf{MAX_DF}"
+    label = f"n{N_CLUSTER}_{sub_label}"
+    X_transformed_pick = f"save/train_text_{sub_label}.pickle"
     X_train_pick = "save/all_train_text.pickle"
     cached_processed = 'save/all_train_text_processed' 
 
@@ -110,8 +111,8 @@ def main():
         tfidfconvert = TfidfVectorizer(max_features=MAX_FEATURES, sublinear_tf=True, max_df=MAX_DF, min_df=MIN_DF).fit(X_train_processed)
 
         X_transformed=tfidfconvert.transform(X_train_processed)
-        pickle.dump(tfidfconvert, open(f"save/tfidf_{label}.pickle", "wb"))
-        pickle.dump(X_transformed, open(f"save/train_text_{label}.pickle", "wb"))
+        pickle.dump(tfidfconvert, open(f"save/tfidf_{sub_label}.pickle", "wb"))
+        pickle.dump(X_transformed, open(f"save/train_text_{sub_label}.pickle", "wb"))
 
     #svd = TruncatedSVD(n_components=SVD_COMPONENTS, random_state=args["seed"])
     #X_reduced = svd.fit_transform(X_transformed)
@@ -133,7 +134,7 @@ def main():
 
     kmeans_dict = {get_hash_str(X_train[idx]): int(label) for idx, label in enumerate(modelkmeans.labels_)}
 
-    with open(f'save/topic_id_pair_{label}', 'w') as f:
+    with open(f'save/kmeans_topic_id_pair_{label}', 'w') as f:
         json.dump(kmeans_dict, f)
     '''
     K = range(4,100)
