@@ -13,6 +13,7 @@ import numpy as np
 import json
 import hashlib
 import pickle
+import os
 
 from features.FeatureFunction import FeatureFunction
 from features.AvgSentenceLen import AvgSentenceLen
@@ -89,7 +90,7 @@ def main():
         X_train_processed = [text_process(item) for item in X_train]
         pickle.dump(X_train_processed, open(cached_processed, 'wb'))
 
-    tfidfconvert = TfidfVectorizer(sublinear_tf=True, max_df=0.7, min_df=0.0001).fit(X_train_processed)
+    tfidfconvert = TfidfVectorizer(max_features=1000, sublinear_tf=True, max_df=0.7, min_df=0.0001).fit(X_train_processed)
 
     X_transformed=tfidfconvert.transform(X_train_processed)
     pickle.dump(tfidfconvert, open("save/tfidf_max07_min00001.pickle", "wb"))
