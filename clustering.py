@@ -60,51 +60,69 @@ def normalize_matrix_so_cols_have_zero_mean_unit_variance(mtx: np.ndarray) -> np
 def main():
     args = args_dependency.get_train_test_args()
 
-    nltk.download('stopwords')
-    nltk.download('wordnet')
+    #custom_features = extract_custom_features(X_train)
 
-    # read data
-    data = ['datasets/indomain_train/squad',
-	   'datasets/indomain_train/nat_questions',
-	   'datasets/indomain_train/newsqa',
-	   'datasets/oodomain_train/duorc',
-	   'datasets/oodomain_train/race',
-	   'datasets/oodomain_train/relation_extraction']
-
-    all_data = {}
-    for i in data:
-        data_dict = ds.read_squad(i, 'save')
-        all_data = ds.merge(data_dict, all_data)
-
-    X_train = list(set(all_data['context']))
-    # get custom features before modifying contexts
-    custom_features = extract_custom_features(X_train)
-
-    #Vectorisation : -
-    #https://scikit-learn.org/stable/modules/decomposition.html#lsa
-    #tfidfconvert = TfidfVectorizer(analyzer=text_process).fit(X_train)
+    MAX_DF = 0.7
+    MIN_DF = 0.0001
+    MAX_FEATURES = 500
+    N_CLUSTER = 20
+    label = f"n{N_CLUSTER}_feature{MAX_FEATURES}_mindf{MIN_DF}_maxdf{MAX_DF}"
+    X_transformed_pick = f"save/train_text_{label}.pickle"
+    X_train_pick = "save/all_train_text.pickle"
     cached_processed = 'save/all_train_text_processed' 
-    if os.path.exists(cached_processed):
-        X_train_processed = pickle.load(open(cached_processed, 'rb'))
+
+    # Load training text
+    if os.path.exists(X_train_pick):
+        X_train = pickle.load(open(X_train_pick, 'rb'))
     else:
-        X_train_processed = [text_process(item) for item in X_train]
-        pickle.dump(X_train_processed, open(cached_processed, 'wb'))
+        # read data
+        data = ['datasets/indomain_train/squad',
+               'datasets/indomain_train/nat_questions',
+               'datasets/indomain_train/newsqa',
+               'datasets/oodomain_train/duorc',
+               'datasets/oodomain_train/race',
+               'datasets/oodomain_train/relation_extraction']
 
-    tfidfconvert = TfidfVectorizer(max_features=1000, sublinear_tf=True, max_df=0.7, min_df=0.0001).fit(X_train_processed)
+        all_data = {}
+        for i in data:
+            data_dict = ds.read_squad(i, 'save')
+            all_data = ds.merge(data_dict, all_data)
 
-    X_transformed=tfidfconvert.transform(X_train_processed)
-    pickle.dump(tfidfconvert, open("save/tfidf_max07_min00001.pickle", "wb"))
-    pickle.dump(X_transformed, open("save/train_text_features_max07_min00001.pickle", "wb"))
+        X_train = list(set(all_data['context']))
+        pickle.dump(X_train, open(X_train_pick, 'wb'))
 
-    svd = TruncatedSVD(n_components=SVD_COMPONENTS, random_state=args["seed"])
-    X_reduced = svd.fit_transform(X_transformed)
+    if os.path.exists(X_transformed_pick):
+        X_transformed = pickle.load(open(X_transformed_pick, 'rb'))
+    else:
+        #Vectorisation : -
+        #https://scikit-learn.org/stable/modules/decomposition.html#lsa
+        #tfidfconvert = TfidfVectorizer(analyzer=text_process).fit(X_train)
+        if os.path.exists(cached_processed):
+            X_train_processed = pickle.load(open(cached_processed, 'rb'))
+        else:
+            nltk.download('stopwords')
+            nltk.download('wordnet')
+
+            # get custom features before modifying contexts
+            X_train_processed = [text_process(item) for item in X_train]
+            pickle.dump(X_train_processed, open(cached_processed, 'wb'))
+
+        tfidfconvert = TfidfVectorizer(max_features=500, sublinear_tf=True, max_df=0.7, min_df=0.0001).fit(X_train_processed)
+
+        X_transformed=tfidfconvert.transform(X_train_processed)
+        pickle.dump(tfidfconvert, open(f"save/tfidf_{label}.pickle", "wb"))
+        pickle.dump(X_transformed, open(f"save/train_text_{label}.pickle", "wb"))
+
+    #svd = TruncatedSVD(n_components=SVD_COMPONENTS, random_state=args["seed"])
+    #X_reduced = svd.fit_transform(X_transformed)
 
     # append the custom features for the full feature set
-    raw_k_means_features = np.concatenate((X_reduced, custom_features), axis=1)
+    #raw_k_means_features = np.concatenate((X_reduced, custom_features), axis=1)
 
     # normalize each column to have 0 mean and unit variance
-    k_means_features = normalize_matrix_so_cols_have_zero_mean_unit_variance(raw_k_means_features)
-    np.save('save/svd_1000', k_means_features)
+    #k_means_features = normalize_matrix_so_cols_have_zero_mean_unit_variance(raw_k_means_features)
+    k_means_features = normalize_matrix_so_cols_have_zero_mean_unit_variance(X_transformed)
+    #np.save('save/svd_1000', k_means_features)
 
     # Cluster the training sentences with K-means technique
     km = KMeans(n_clusters=20)
@@ -113,9 +131,9 @@ def main():
     hist, bins = np.histogram(modelkmeans20.labels_, bins=20)
     print (hist)
 
-    kmeans_dict = {get_hash_str(X_train[idx]): label for idx, label in enumerate(all_modelkmeans20.labels_)}
+    kmeans_dict = {get_hash_str(X_train[idx]): int(label) for idx, label in enumerate(modelkmeans20.labels_)}
 
-    with open('save/topic_id_pair_kmeans20_1000', 'w') as f:
+    with open(f'save/topic_id_pair_{label}', 'w') as f:
         json.dump(kmeans_dict, f)
     '''
     K = range(4,100)
