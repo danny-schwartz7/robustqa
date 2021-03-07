@@ -11,6 +11,8 @@ import string
 from typing import List
 import numpy as np
 import json
+import hashlib
+import pickle
 
 from features.FeatureFunction import FeatureFunction
 from features.AvgSentenceLen import AvgSentenceLen
@@ -70,17 +72,22 @@ def main():
 
     all_data = {}
     for i in data:
-	data_dict = ds.read_squad(i, 'save', args['save_dir'])
-	all_data = ds.merge(data_dict, all_data)
+        data_dict = ds.read_squad(i, 'save')
+        all_data = ds.merge(data_dict, all_data)
 
     X_train = list(set(all_data['context']))
     # get custom features before modifying contexts
     custom_features = extract_custom_features(X_train)
 
     #Vectorisation : -
-    tfidfconvert = TfidfVectorizer(analyzer=text_process).fit(X_train)
+    #https://scikit-learn.org/stable/modules/decomposition.html#lsa
+    #tfidfconvert = TfidfVectorizer(analyzer=text_process).fit(X_train)
+    tfidfconvert = TfidfVectorizer(analyzer=text_process, sublinear_tf=True, max_df=0.7, min_df=0.0001).fit(X_train)
 
     X_transformed=tfidfconvert.transform(X_train)
+    pickle.dump(tfidfconvert, open("save/tfidf_max07_min00001.pickle", "wb"))
+    pickle.dump(X_transformed, open("save/train_text_features_max07_min00001.pickle", "wb"))
+
     svd = TruncatedSVD(n_components=SVD_COMPONENTS, random_state=args["seed"])
     X_reduced = svd.fit_transform(X_transformed)
 
@@ -89,13 +96,18 @@ def main():
 
     # normalize each column to have 0 mean and unit variance
     k_means_features = normalize_matrix_so_cols_have_zero_mean_unit_variance(raw_k_means_features)
+    np.save('save/svd_1000', k_means_features)
 
     # Cluster the training sentences with K-means technique
     km = KMeans(n_clusters=20)
     modelkmeans20 = km.fit(k_means_features)
-    kmeans_dict = {get_hash_str(all_train[idx]): label for idx, label in enumerate(all_modelkmeans20.labels_)}
 
-    with open('save/topic_id_pair_kmeans', 'w') as f:
+    hist, bins = np.histogram(modelkmeans20.labels_, bins=20)
+    print (hist)
+
+    kmeans_dict = {get_hash_str(X_train[idx]): label for idx, label in enumerate(all_modelkmeans20.labels_)}
+
+    with open('save/topic_id_pair_kmeans20_1000', 'w') as f:
         json.dump(kmeans_dict, f)
     '''
     K = range(4,100)
