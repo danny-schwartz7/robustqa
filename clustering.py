@@ -62,10 +62,10 @@ def main():
 
     #custom_features = extract_custom_features(X_train)
 
-    MAX_DF = 0.7
-    MIN_DF = 0.0001
-    MAX_FEATURES = 500
-    N_CLUSTER = 20
+    MAX_DF = args['max_df']
+    MIN_DF = args['min_df']
+    MAX_FEATURES = args['max_features']
+    N_CLUSTER = args['num_clusters']
     label = f"n{N_CLUSTER}_feature{MAX_FEATURES}_mindf{MIN_DF}_maxdf{MAX_DF}"
     X_transformed_pick = f"save/train_text_{label}.pickle"
     X_train_pick = "save/all_train_text.pickle"
@@ -107,7 +107,7 @@ def main():
             X_train_processed = [text_process(item) for item in X_train]
             pickle.dump(X_train_processed, open(cached_processed, 'wb'))
 
-        tfidfconvert = TfidfVectorizer(max_features=500, sublinear_tf=True, max_df=0.7, min_df=0.0001).fit(X_train_processed)
+        tfidfconvert = TfidfVectorizer(max_features=MAX_FEATURES, sublinear_tf=True, max_df=MAX_DF, min_df=MIN_DF).fit(X_train_processed)
 
         X_transformed=tfidfconvert.transform(X_train_processed)
         pickle.dump(tfidfconvert, open(f"save/tfidf_{label}.pickle", "wb"))
@@ -125,13 +125,13 @@ def main():
     #np.save('save/svd_1000', k_means_features)
 
     # Cluster the training sentences with K-means technique
-    km = KMeans(n_clusters=20)
-    modelkmeans20 = km.fit(k_means_features)
+    km = KMeans(n_clusters=N_CLUSTER)
+    modelkmeans = km.fit(k_means_features)
 
-    hist, bins = np.histogram(modelkmeans20.labels_, bins=20)
+    hist, bins = np.histogram(modelkmeans.labels_, bins=N_CLUSTER)
     print (hist)
 
-    kmeans_dict = {get_hash_str(X_train[idx]): int(label) for idx, label in enumerate(modelkmeans20.labels_)}
+    kmeans_dict = {get_hash_str(X_train[idx]): int(label) for idx, label in enumerate(modelkmeans.labels_)}
 
     with open(f'save/topic_id_pair_{label}', 'w') as f:
         json.dump(kmeans_dict, f)

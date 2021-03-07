@@ -48,6 +48,12 @@ def get_train_test_args():
     parser.add_argument('--max-num-batches', type=int, default=2000)
     parser.add_argument('--tune-checkpoint-path', type=str)
 
+    # arguments for kmeans clusters
+    parser.add_argument('--num-clusters', type=int, default=20)
+    parser.add_argument('--max-features', type=int, default=500)
+    parser.add_argument('--max-df', type=float, default=0.7)
+    parser.add_argument('--min-df', type=float, default=0.0001)
+
     parser.add_argument('--tune', action='store_true')
 
     args = parser.parse_args()
