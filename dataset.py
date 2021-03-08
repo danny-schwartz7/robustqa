@@ -6,8 +6,13 @@ from collections import Counter, OrderedDict, defaultdict as ddict
 import os
 import uuid
 import json
+import hashlib
 
 UUID = str(uuid.uuid1()) + str(os.getpid())
+
+def get_hash_str(text):
+    md_object = hashlib.md5(text.encode())
+    return md_object.hexdigest()
 
 def calculate_weights(Dataset):
     if 'topic_id' in Dataset:
@@ -35,10 +40,13 @@ def get_topic_id_pair(save_dir, orig_source=False, kmeans=False):
     if orig_source:
         topic_id_pair = {element:idx for idx, element in enumerate(orig_main_sources)} 
         topic_id_file = None
+    elif kmeans:
+        topic_id_file = f'{save_dir}/kmeans_topic_id_pair'
     else:
         # neither orig_source or kmeans is True
         # use the topics in the files
         topic_id_file = f'{save_dir}/topic_id_pair_{UUID}'
+    if topic_id_file is not None:
         if os.path.exists(topic_id_file):
             topic_id_pair = json.loads(open(topic_id_file).read())
         else:
@@ -130,10 +138,14 @@ def read_squad(path, save_dir, orig_source=False, kmeans=False):
 
     data_dict = {'question': [], 'context': [], 'id': [], 'answer': [], 'topic': [], 'topic_id': []}
     for group in squad_dict['data']:
+        # topic id for SQUaD 2.0 topics, or orig sources as topics
         topic, topic_id, topic_id_pair = get_topic_id(group, topic_id_pair, orig_source, kmeans)
         for passage in group['paragraphs']:
             context = passage['context']
             for qa in passage['qas']:
+                if kmeans:
+                    #print ("context: %s" % context) 
+                    topic_id = topic_id_pair[get_hash_str(context)]
                 add_question_to_dict(qa, context, topic, topic_id, data_dict)
 
     data_dict_collapsed = collapse_data_dict(data_dict)
