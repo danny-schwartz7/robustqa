@@ -69,12 +69,13 @@ def main():
     sub_label = f"feature{MAX_FEATURES}_mindf{MIN_DF}_maxdf{MAX_DF}"
     label = f"n{N_CLUSTER}_{sub_label}"
     X_transformed_pick = f"save/train_text_{sub_label}.pickle"
-    X_train_pick = "save/all_train_text.pickle"
+    X_train_pick = "save/all_train_text_id.pickle"
     cached_processed = 'save/all_train_text_processed' 
 
     # Load training text
     if os.path.exists(X_train_pick):
-        X_train = pickle.load(open(X_train_pick, 'rb'))
+        text_to_id_dict = pickle.load(open(X_train_pick, 'rb'))
+        X_train = list(text_to_id_dict.keys())
     else:
         # read data
         data = ['datasets/indomain_train/squad',
@@ -89,8 +90,9 @@ def main():
             data_dict = ds.read_squad(i, 'save')
             all_data = ds.merge(data_dict, all_data)
 
-        X_train = list(set(all_data['context']))
-        pickle.dump(X_train, open(X_train_pick, 'wb'))
+        text_to_id_dict = dict(zip(all_data['context'], all_data['topic_id']))
+        X_train = list(text_to_id_dict.keys())
+        pickle.dump(text_to_id_dict, open(X_train_pick, 'wb'))
 
     if os.path.exists(X_transformed_pick):
         X_transformed = pickle.load(open(X_transformed_pick, 'rb'))
@@ -108,7 +110,8 @@ def main():
             X_train_processed = [text_process(item) for item in X_train]
             pickle.dump(X_train_processed, open(cached_processed, 'wb'))
 
-        tfidfconvert = TfidfVectorizer(max_features=MAX_FEATURES, sublinear_tf=True, max_df=MAX_DF, min_df=MIN_DF).fit(X_train_processed)
+        #tfidfconvert = TfidfVectorizer(max_features=MAX_FEATURES, sublinear_tf=True, max_df=MAX_DF, min_df=MIN_DF).fit(X_train_processed)
+        tfidfconvert = TfidfVectorizer(max_features=MAX_FEATURES, max_df=MAX_DF, min_df=MIN_DF).fit(X_train_processed)
 
         X_transformed=tfidfconvert.transform(X_train_processed)
         pickle.dump(tfidfconvert, open(f"save/tfidf_{sub_label}.pickle", "wb"))
@@ -122,12 +125,12 @@ def main():
 
     # normalize each column to have 0 mean and unit variance
     #k_means_features = normalize_matrix_so_cols_have_zero_mean_unit_variance(raw_k_means_features)
-    k_means_features = normalize_matrix_so_cols_have_zero_mean_unit_variance(X_transformed)
+    #k_means_features = normalize_matrix_so_cols_have_zero_mean_unit_variance(X_transformed)
     #np.save('save/svd_1000', k_means_features)
 
     # Cluster the training sentences with K-means technique
     km = KMeans(n_clusters=N_CLUSTER)
-    modelkmeans = km.fit(k_means_features)
+    modelkmeans = km.fit(X_transformed)
 
     hist, bins = np.histogram(modelkmeans.labels_, bins=N_CLUSTER)
     print (hist)
@@ -136,6 +139,18 @@ def main():
 
     with open(f'save/kmeans_topic_id_pair_{label}', 'w') as f:
         json.dump(kmeans_dict, f)
+
+    # Build the matrix with cluster IDs as rows, topic IDs as columns
+    topics_id = []
+    for k, v in text_to_id_dict.items(): 
+        if v not in topics_id:
+            topics_id.append(v)
+    num_topics = len(topics_id)
+    co_occurance = np.zeros((num_topics, N_CLUSTER))
+    for idx, cluster in enumerate(modelkmeans.labels_):
+        topic_id = int(text_to_id_dict[X_train[idx]])
+        co_occurance[topic_id][int(cluster)] += 1
+    np.save(f'save/kmeans_co_occurance_{label}', co_occurance)
     '''
     K = range(4,100)
     Sum_of_squared_distances = []
