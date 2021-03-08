@@ -17,3 +17,6 @@ tune_results/**
 
 # topic_id_pair
 topic_id_pair*
+
+#hyperparam search results
+hyperparam-search/**

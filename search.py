@@ -26,7 +26,8 @@ def do_search():
     # discriminator parameters
     args["discriminator_lr"] = tune.loguniform(3e-6, 3e-4)
     args["discriminator_momentum"] = tune.uniform(0.8, 0.95)
-    args["discriminator_step_multiplier"] = tune.randint(1, 4)
+    #args["discriminator_step_multiplier"] = tune.randint(1, 4)
+    args["discriminator_step_multiplier"] = tune.randint(1, 3)
 
     tokenizer = DistilBertTokenizerFast.from_pretrained('distilbert-base-uncased')
 
