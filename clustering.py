@@ -155,7 +155,7 @@ def cluster(log, results_folder, num_clusters, num_iters, k_means_features):
     cluster_sizes = list(Counter(clusters.labels_).values())
     log.info(f'Kmeans biggest cluster / smallest cluster:  {max(cluster_sizes)} / {min(cluster_sizes)} = {max(cluster_sizes) / min(cluster_sizes)}')
 
-    log.info(f"Saving kmeans clusters in {results_folder}/kmeans_clusters.json...")
+    log.info(f"Saving kmeans clusters in {results_folder}/kmeans_clusters_clusters_{num_clusters}_iters_{num_iters}.json...")
     with open(f'{results_folder}/kmeans_clusters_clusters_{num_clusters}_iters_{num_iters}.json', 'w') as f:
         json.dump(kmeans_dict, f, indent=2)
 
