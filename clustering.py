@@ -145,11 +145,11 @@ def prepare_features(log, max_tfidf_features, custom_feature_scale, X_train, cus
 def cluster(log, results_folder, num_clusters, num_iters, k_means_features):
     # Cluster the training sentences with K-means technique
     log.info(f'Generating {num_clusters} clusters with kmeans...')
-    km = KMeans(n_clusters=num_clusters, n_init=num_iters)
+    km = KMeans(n_clusters=num_clusters, max_iter=num_iters)
     clusters = km.fit(k_means_features)
 
     hist, bins = np.histogram(clusters.labels_, bins=num_clusters)
-    log.info(f'Kmeans is complete. Histogram: {hist}')
+    log.info(f'Kmeans is complete in {clusters.n_iter_} iterations. Histogram: {hist}')
 
     kmeans_dict = {get_hash_str(X_train[idx]): int(label) for idx, label in enumerate(clusters.labels_)}
     cluster_sizes = list(Counter(clusters.labels_).values())
@@ -184,8 +184,8 @@ if __name__ == "__main__":
         os.makedirs("clustering")
     log = get_logger("clustering", "log_clustering")
 
-    max_tf_idf_features = [100, 200, 300]
-    custom_feature_scale = [2, 4, 6, 8, 10]
+    max_tf_idf_features = [300, 500]
+    custom_feature_scale = [6]
     clusters = [20, 30, 40, 50, 60, 70]
     iters = [300, 350, 400]
 
