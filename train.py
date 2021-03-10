@@ -467,7 +467,7 @@ class Trainer():
         else:
             return torch.nn.NLLLoss()(log_prob, labels)
 
-def get_datasets(log, datasets, data_dir, save_dir, orig_source=False, kmeans=False):
+def get_datasets(log, datasets, data_dir, save_dir, orig_source=False, kmeans=False, kmeans_file=None):
     if datasets is None:
         return None, None
 
@@ -477,14 +477,15 @@ def get_datasets(log, datasets, data_dir, save_dir, orig_source=False, kmeans=Fa
     for dataset in datasets:
         log.info(f'Preparing {dataset} Data...')
         dataset_name += f'_{dataset}'
-        dataset_dict_curr = ds.read_squad(f'{data_dir}/{dataset}', save_dir, orig_source, kmeans)
+        dataset_dict_curr = ds.read_squad(f'{data_dir}/{dataset}', save_dir, orig_source, kmeans, kmeans_file)
         dataset_dict = ds.merge(dataset_dict, dataset_dict_curr)
     
     return dataset_name, dataset_dict
 
-def get_dataset(log, args, datasets, data_dir, tokenizer, split_name, oodomain_datasets=None, oodomain_dir=None, orig_source=False, kmeans=False):
-    dataset_name, dataset_dict = get_datasets(log, datasets, data_dir, args["save_dir"], orig_source, kmeans)
-    oodomain_dataset_name, oodomain_dataset_dict = get_datasets(log, oodomain_datasets, oodomain_dir, args["save_dir"], orig_source, kmeans)
+def get_dataset(log, args, datasets, data_dir, tokenizer, split_name
+                , oodomain_datasets=None, oodomain_dir=None, orig_source=False, kmeans=False, kmeans_file=None):
+    dataset_name, dataset_dict = get_datasets(log, datasets, data_dir, args["save_dir"], orig_source, kmeans, kmeans_file)
+    oodomain_dataset_name, oodomain_dataset_dict = get_datasets(log, oodomain_datasets, oodomain_dir, args["save_dir"], orig_source, kmeans, kmeans_file)
     if oodomain_dataset_dict is not None:
         dataset_name += f'_{oodomain_dataset_name}'
         dataset_dict = ds.merge(dataset_dict, oodomain_dataset_dict)
@@ -522,11 +523,13 @@ def do_train(args, tokenizer):
 
     if not args['train_wo_oodomain']:
         train_dataset, _ = get_dataset(log, args, args["train_datasets"], args["train_dir"], tokenizer, 'train'
-                                       , args["oodomain_train_datasets"], args["oodomain_train_dir"], 
-                                       args["orig_sources_as_topics"], args["kmeans_clusters_as_topics"])
+                                       , args["oodomain_train_datasets"], args["oodomain_train_dir"]
+                                       , orig_source=args["orig_sources_as_topics"], kmeans=args["kmeans_clusters_as_topics"]
+                                       , kmeans_file=args["kmeans_topic_file"])
     else:
-        train_dataset, _ = get_dataset(log, args, args["train_datasets"], args["train_dir"], tokenizer, 'train', orig_source=args["orig_sources_as_topics"],
-                kmeans=args["kmeans_clusters_as_topics"])
+        train_dataset, _ = get_dataset(log, args, args["train_datasets"], args["train_dir"], tokenizer, 'train'
+                                    , orig_source=args["orig_sources_as_topics"], kmeans=args["kmeans_clusters_as_topics"]
+                                    , kmeans_file=args["kmeans_topic_file"])
 
     log.info("Preparing Validation Data...")
     in_val_dataset, in_val_dict = get_dataset(log, args, args["train_datasets"], args["val_dir"], tokenizer, 'val')

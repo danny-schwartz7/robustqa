@@ -10,7 +10,7 @@ import hashlib
 from args import get_train_test_args
 
 UUID = str(uuid.uuid1()) + str(os.getpid())
-args = get_train_test_args()
+# args = get_train_test_args()
 
 def get_hash_str(text):
     md_object = hashlib.md5(text.encode())
@@ -36,14 +36,14 @@ def merge(encodings, new_encoding):
             encodings[key] += new_encoding[key]
         return encodings
 
-def get_topic_id_pair(save_dir, orig_source=False, kmeans=False):
+def get_topic_id_pair(save_dir, orig_source=False, kmeans=False, kmeans_file=None):
     # a unique <topic:id> mapping per process
     orig_main_sources = ['squad', 'newsqa', 'nat_questions', 'duorc', 'race', 'relation_extraction']
     if orig_source:
         topic_id_pair = {element:idx for idx, element in enumerate(orig_main_sources)} 
         topic_id_file = None
     elif kmeans:
-        topic_id_file = args['kmeans_topic_file']
+        topic_id_file = kmeans_file
         assert os.path.exists(topic_id_file)
     else:
         # neither orig_source or kmeans is True
@@ -120,7 +120,7 @@ def collapse_data_dict(data_dict):
     
     return data_dict_collapsed
 
-def read_squad(path, save_dir, orig_source=False, kmeans=False):
+def read_squad(path, save_dir, orig_source=False, kmeans=False, kmeans_file=None):
     # parameters:
     # path: path of the file to read from
     # save_dir: the dir to save the topic_id_pair file where uniq
@@ -137,7 +137,7 @@ def read_squad(path, save_dir, orig_source=False, kmeans=False):
     with open(path, 'rb') as f:
         squad_dict = json.load(f)
 
-    topic_id_file, topic_id_pair = get_topic_id_pair(save_dir, orig_source, kmeans)
+    topic_id_file, topic_id_pair = get_topic_id_pair(save_dir, orig_source, kmeans, kmeans_file)
 
     data_dict = {'question': [], 'context': [], 'id': [], 'answer': [], 'topic': [], 'topic_id': []}
     for group in squad_dict['data']:
