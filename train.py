@@ -482,8 +482,15 @@ def get_datasets(log, datasets, data_dir, save_dir, orig_source=False, kmeans=Fa
     
     return dataset_name, dataset_dict
 
-def get_dataset(log, args, datasets, data_dir, tokenizer, split_name
-                , oodomain_datasets=None, oodomain_dir=None, orig_source=False, kmeans=False, kmeans_file=None):
+def get_dataset(log, args, datasets, data_dir_name, tokenizer, split_name
+                , oodomain_datasets=None, oodomain_dir_name=None):
+
+    data_dir = args[data_dir_name]
+    oodomain_dir = args[oodomain_dir_name]
+    orig_source = args["orig_sources_as_topics"] if split_name=='train' else None
+    kmeans = args["kmeans_clusters_as_topics"] if split_name=='train' else None
+    kmeans_file = args["kmeans_topic_file"] if split_name=='train' else None
+
     dataset_name, dataset_dict = get_datasets(log, datasets, data_dir, args["save_dir"], orig_source, kmeans, kmeans_file)
     oodomain_dataset_name, oodomain_dataset_dict = get_datasets(log, oodomain_datasets, oodomain_dir, args["save_dir"], orig_source, kmeans, kmeans_file)
     if oodomain_dataset_dict is not None:
@@ -518,22 +525,22 @@ def do_train(args, tokenizer):
     log.info("Preparing Training Data...")
     args["device"] = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    discriminator = DomainDiscriminator(20, 768)  # TODO: replace these 'magic numbers' with better param values
+    discriminator = DomainDiscriminator(args["num_clusters"], 768)  # TODO: replace these 'magic numbers' with better param values
     trainer = Trainer(args, log, discriminator)
 
     if not args['train_wo_oodomain']:
-        train_dataset, _ = get_dataset(log, args, args["train_datasets"], args["train_dir"], tokenizer, 'train'
-                                       , args["oodomain_train_datasets"], args["oodomain_train_dir"]
-                                       , orig_source=args["orig_sources_as_topics"], kmeans=args["kmeans_clusters_as_topics"]
-                                       , kmeans_file=args["kmeans_topic_file"])
+        train_dataset, _ = get_dataset(log, args, args["train_datasets"], data_dir_name="train_dir", tokenizer=tokenizer, split_name='train'
+                                       , oodomain_datasets=args["oodomain_train_datasets"], oodomain_dir_name="oodomain_train_dir")
+                                    #    , orig_source=args["orig_sources_as_topics"], kmeans=args["kmeans_clusters_as_topics"]
+                                    #    , kmeans_file=args["kmeans_topic_file"])
     else:
-        train_dataset, _ = get_dataset(log, args, args["train_datasets"], args["train_dir"], tokenizer, 'train'
-                                    , orig_source=args["orig_sources_as_topics"], kmeans=args["kmeans_clusters_as_topics"]
-                                    , kmeans_file=args["kmeans_topic_file"])
+        train_dataset, _ = get_dataset(log, args, args["train_datasets"], data_dir_name="train_dir", tokenizer=tokenizer, split_name='train')
+                                    # , orig_source=args["orig_sources_as_topics"], kmeans=args["kmeans_clusters_as_topics"]
+                                    # , kmeans_file=args["kmeans_topic_file"])
 
     log.info("Preparing Validation Data...")
-    in_val_dataset, in_val_dict = get_dataset(log, args, args["train_datasets"], args["val_dir"], tokenizer, 'val')
-    oo_val_dataset, oo_val_dict = get_dataset(log, args, args["oodomain_train_datasets"], args["oodomain_val_dir"], tokenizer, 'val')
+    in_val_dataset, in_val_dict = get_dataset(log, args, args["train_datasets"], data_dir_name="val_dir", tokenizer=tokenizer, split_name='val')
+    oo_val_dataset, oo_val_dict = get_dataset(log, args, args["oodomain_train_datasets"], data_dir_name="oodomain_val_dir", tokenizer=tokenizer, split_name='val')
 
     if args['weighted_random_sampling']:
         sampler_weights = torch.zeros((len(train_dataset),))
