@@ -3,6 +3,7 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
+from sklearn_extra.cluster import KMedoids
 from sklearn.preprocessing import normalize
 import matplotlib.pyplot as plt
 import dataset as ds
@@ -142,10 +143,15 @@ def prepare_features(log, max_tfidf_features, custom_feature_scale, X_train, cus
 
     return k_means_features
 
-def cluster(log, results_folder, num_clusters, num_iters, k_means_features):
+def cluster(log, results_folder, num_clusters, num_iters, k_means_features, use_kmedoids=False):
     # Cluster the training sentences with K-means technique
     log.info(f'Generating {num_clusters} clusters with kmeans...')
-    km = KMeans(n_clusters=num_clusters, n_init=num_iters)
+    if use_kmedoids:
+        # num_iters passed to max_iter
+        km = KMedoids(n_clusters=num_clusters, max_iter=num_iters)
+    else:
+        # num_iters passed to n_init
+        km = KMeans(n_clusters=num_clusters, n_init=num_iters)
     clusters = km.fit(k_means_features)
 
     hist, bins = np.histogram(clusters.labels_, bins=num_clusters)
@@ -184,10 +190,17 @@ if __name__ == "__main__":
         os.makedirs("clustering")
     log = get_logger("clustering", "log_clustering")
 
+    '''
     max_tf_idf_features = [100, 200, 300]
     custom_feature_scale = [2, 4, 6, 8, 10]
     clusters = [20, 30, 40, 50, 60, 70]
     iters = [300, 350, 400]
+    '''
+    max_tf_idf_features = [100]
+    custom_feature_scale = [2]
+    clusters = [40]
+    iters = [300]
+    use_kmedoids = True
 
     results_folder_format = 'clustering/max_tfidf_{0}_custom_scale_{1}'
     X_train, X_train_processed, custom_features, text_to_id_dict = load_text(log)
@@ -202,7 +215,7 @@ if __name__ == "__main__":
                     if not os.path.exists(results_folder):
                         os.mkdir(results_folder)
 
-                    k_means_clusters, inertia = cluster(log, results_folder, num_clusters, num_iters, k_means_features)
+                    k_means_clusters, inertia = cluster(log, results_folder, num_clusters, num_iters, k_means_features, use_kmedoids)
                     sum_of_squared_distances.append(inertia)
                     gen_cooccurrance_matrix(results_folder, text_to_id_dict, num_clusters, num_iters, k_means_clusters, X_train)
                     
