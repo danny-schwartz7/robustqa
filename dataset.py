@@ -7,8 +7,10 @@ import os
 import uuid
 import json
 import hashlib
+from args import get_train_test_args
 
 UUID = str(uuid.uuid1()) + str(os.getpid())
+args = get_train_test_args()
 
 def get_hash_str(text):
     md_object = hashlib.md5(text.encode())
@@ -41,7 +43,8 @@ def get_topic_id_pair(save_dir, orig_source=False, kmeans=False):
         topic_id_pair = {element:idx for idx, element in enumerate(orig_main_sources)} 
         topic_id_file = None
     elif kmeans:
-        topic_id_file = f'{save_dir}/kmeans_topic_id_pair'
+        topic_id_file = args['kmeans_topic_file']
+        assert os.path.exists(topic_id_file)
     else:
         # neither orig_source or kmeans is True
         # use the topics in the files

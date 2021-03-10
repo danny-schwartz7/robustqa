@@ -35,8 +35,11 @@ def get_train_test_args():
     parser.add_argument('--subset-keep-percentage', type=float, default=0.01)
     parser.add_argument('--weighted-random-sampling', action='store_true') # store_true defaults to false
     parser.add_argument('--train-wo-oodomain', action='store_false') # store_false defaults to true
+
+    # arguments for the topics to use
     parser.add_argument('--orig-sources-as-topics', action='store_true') 
     parser.add_argument('--kmeans-clusters-as-topics', action='store_true') 
+    parser.add_argument('--kmeans-topic-file', type=str, default='clustering/kmeans_topic_id_pair') 
     
     # arguments for hyperparameter search
     parser.add_argument("--tune-name", type=str, default="hyperparam-search")
