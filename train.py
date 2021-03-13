@@ -297,9 +297,9 @@ class Trainer():
                     qa_loss_sum += outputs.loss.item()
 
                     if self.discriminator is not None:
-                        hidden_cls = outputs.hidden_states[6][:, 0, :].to(device)
+                        hidden_all = outputs.hidden_states[6].to(device)
 
-                        discrim_log_prob = self.discriminator(hidden_cls).to(device)
+                        discrim_log_prob = self.discriminator(hidden_all).to(device)
                         targets = torch.ones_like(discrim_log_prob) * (1 / self.num_domains)
                         kl_criterion = torch.nn.KLDivLoss(reduction="batchmean")
                         adv_loss = kl_criterion(discrim_log_prob, targets)
@@ -370,10 +370,11 @@ class Trainer():
                                     start_positions=start_positions,
                                     end_positions=end_positions, output_hidden_states=True)
                     if self.discriminator is not None:
-                        hidden_cls = outputs.hidden_states[6][:, 0, :].to(device)
+                        #hidden_cls = outputs.hidden_states[6][:, 0, :].to(device)
+                        hidden_all = outputs.hidden_states[6].to(device)
 
                         labels = batch['topic_id'].to(device)
-                        log_prob = self.discriminator(hidden_cls).to(device)
+                        log_prob = self.discriminator(hidden_all).to(device)
                         targets = torch.ones_like(log_prob) * (1/self.num_domains)
                         kl_criterion = torch.nn.KLDivLoss(reduction="batchmean")
                         adv_loss = kl_criterion(log_prob, targets)  # TODO: in the paper, they have an annealing schedule for this loss term (it matters less during later epochs)
@@ -391,8 +392,9 @@ class Trainer():
                             outputs = model(input_ids, attention_mask=attention_mask,
                                             start_positions=start_positions,
                                             end_positions=end_positions, output_hidden_states=True)
-                            hidden_cls = outputs.hidden_states[6][:, 0, :]
-                            log_prob = self.discriminator(hidden_cls)
+                            #hidden_cls = outputs.hidden_states[6][:, 0, :]
+                            hidden_all = outputs.hidden_states[6]
+                            log_prob = self.discriminator(hidden_all)
 
                             discrim_loss = self.get_discriminator_loss(log_prob, labels)
                             discrim_loss.backward()
