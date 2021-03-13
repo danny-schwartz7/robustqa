@@ -490,7 +490,7 @@ def get_dataset(log, args, datasets, data_dir_name, tokenizer, split_name
                 , oodomain_datasets=None, oodomain_dir_name=None):
 
     data_dir = args[data_dir_name]
-    oodomain_dir = args[oodomain_dir_name]
+    oodomain_dir = args[oodomain_dir_name] if oodomain_dir_name is not None else None
     orig_source = args["orig_sources_as_topics"] if split_name=='train' else None
     kmeans = args["kmeans_clusters_as_topics"] if split_name=='train' else None
     kmeans_file = args["kmeans_topic_file"] if split_name=='train' else None
