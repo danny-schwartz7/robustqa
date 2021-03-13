@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 import torch.nn.functional as F
 
@@ -32,3 +33,8 @@ class DomainDiscriminator(nn.Module):
         logits = self.hidden_layers[-1](x)
         log_prob = F.log_softmax(logits, dim=1)
         return log_prob
+
+    def get_last_layer_gradient_magnitude(self):
+        """This function is for debugging purposes only"""
+        grads = torch.cat((self.hidden_layers[-1].weight.grad.T, self.hidden_layers[-1].bias.grad.reshape(1, -1)))
+        return torch.norm(grads).item()
