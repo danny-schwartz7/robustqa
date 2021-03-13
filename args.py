@@ -36,7 +36,10 @@ def get_train_test_args():
     parser.add_argument('--weighted-random-sampling', action='store_true') # store_true defaults to false
     parser.add_argument('--train-wo-oodomain', action='store_false') # store_false defaults to true
     parser.add_argument('--orig-sources-as-topics', action='store_true') 
-    parser.add_argument('--kmeans-clusters-as-topics', action='store_true') 
+    parser.add_argument('--kmeans-clusters-as-topics', action='store_true')
+
+    # logs the magnitude of the gradient of the final hidden layer of the discriminator to tensorboard.
+    parser.add_argument('--display-discrim-grad-mag', action='store_false')
     
     # arguments for hyperparameter search
     parser.add_argument("--tune-name", type=str, default="hyperparam-search")

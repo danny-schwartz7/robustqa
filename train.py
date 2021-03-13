@@ -230,6 +230,29 @@ def read_and_process(args, tokenizer, dataset_dict, dir_name, dataset_name, spli
         util.save_pickle(tokenized_examples, cache_path)
     return tokenized_examples
 
+class EMA:
+    """An exponential moving average for tracking and smoothing things like loss and KL divergence"""
+
+    fresh: bool
+    decay: float
+    value: float
+
+    def __init__(self, decay: float = 0.99):
+        self.fresh = True
+        self.value = 0.
+        self.decay = decay
+
+    def get(self) -> float:
+        return self.value
+
+    def update(self, value):
+        if self.fresh:
+            self.value = value
+            self.fresh = False
+        else:
+            self.value = self.decay * self.value + (1 - self.decay) * value
+
+
 #TODO: use a logger, use tensorboard
 class Trainer():
     def __init__(self, args, log,
@@ -256,6 +279,7 @@ class Trainer():
         self.discrim_step_multiplier = args["discriminator_step_multiplier"]
         self.nll_weights = None  # This will be initialized later
         self.skip_nll_weights = args["weighted_random_sampling"]
+        self.display_discrim_grad_mag = args["display_discrim_grad_mag"]
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
@@ -353,6 +377,8 @@ class Trainer():
         if self.discriminator is not None:
             # TODO: does weight decay for the discriminator really make sense?
             discrim_optimizer = torch.optim.SGD(self.discriminator.parameters(), lr=self.discriminator_lr, momentum=self.discriminator_momentum)
+            discrim_loss_ema = EMA()
+            discrim_acc_ema = EMA()
 
         for epoch_num in range(self.num_epochs):
             self.log.info(f'Epoch: {epoch_num}')
@@ -415,6 +441,16 @@ class Trainer():
 
                         # Discriminator accuracy as a percentage
                         tbx.add_scalar('train/discrim_acc', discrim_acc, global_idx)
+
+                        discrim_acc_ema.update(discrim_acc)
+                        discrim_loss_ema.update(discrim_loss)
+
+                        # EMAs for discrim acc and discrim loss, they can be quite noisy
+                        tbx.add_scalar('train/discrim_acc_EMA', discrim_acc_ema.get(), global_idx)
+                        tbx.add_scalar('train/discrim_loss_EMA', discrim_loss_ema.get(), global_idx)
+
+                        if self.display_discrim_grad_mag:
+                            tbx.add_scalar('train/discrim_grad_magnitude', self.discriminator.get_last_layer_gradient_magnitude(), global_idx)
 
                     if (global_idx % self.eval_every) == 0:
                         # TODO: add discriminator information?
