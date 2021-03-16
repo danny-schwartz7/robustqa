@@ -530,22 +530,22 @@ def do_train(args, tokenizer):
     args["device"] = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     if not args['train_wo_oodomain']:
-        train_dataset, _ = get_dataset(log, args, args["train_datasets"], data_dir_name="train_dir", tokenizer=tokenizer, split_name='train'
-                                       , oodomain_datasets=args["oodomain_train_datasets"], oodomain_dir_name="oodomain_train_dir")
-                                    #    , orig_source=args["orig_sources_as_topics"], kmeans=args["kmeans_clusters_as_topics"]
-                                    #    , kmeans_file=args["kmeans_topic_file"])
+        train_dataset, _ = get_dataset(log, args, args["train_datasets"], data_dir_name="train_dir"
+                                        , tokenizer=tokenizer, split_name='train'
+                                        , oodomain_datasets=args["oodomain_train_datasets"], oodomain_dir_name="oodomain_train_dir")
     else:
-        train_dataset, _ = get_dataset(log, args, args["train_datasets"], data_dir_name="train_dir", tokenizer=tokenizer, split_name='train')
-                                    # , orig_source=args["orig_sources_as_topics"], kmeans=args["kmeans_clusters_as_topics"]
-                                    # , kmeans_file=args["kmeans_topic_file"])
+        train_dataset, _ = get_dataset(log, args, args["train_datasets"], data_dir_name="train_dir"
+                                        , tokenizer=tokenizer, split_name='train')
 
     num_topics = train_dataset.num_topics()
     discriminator = DomainDiscriminator(num_topics, BERT_HIDDEN_DIM)
     trainer = Trainer(args, log, num_topics, discriminator)
 
     log.info("Preparing Validation Data...")
-    in_val_dataset, in_val_dict = get_dataset(log, args, args["train_datasets"], data_dir_name="val_dir", tokenizer=tokenizer, split_name='val')
-    oo_val_dataset, oo_val_dict = get_dataset(log, args, args["oodomain_train_datasets"], data_dir_name="oodomain_val_dir", tokenizer=tokenizer, split_name='val')
+    in_val_dataset, in_val_dict = get_dataset(log, args, args["train_datasets"], data_dir_name="val_dir"
+                                                , tokenizer=tokenizer, split_name='val')
+    oo_val_dataset, oo_val_dict = get_dataset(log, args, args["oodomain_train_datasets"], data_dir_name="oodomain_val_dir"
+                                                , tokenizer=tokenizer, split_name='val')
 
     if args['weighted_random_sampling']:
         sampler_weights = torch.zeros((len(train_dataset),))
@@ -584,7 +584,8 @@ def do_eval(args, tokenizer):
     model = DistilBertForQuestionAnswering.from_pretrained(checkpoint_path)
     model.to(args["device"])
 
-    eval_dataset, eval_dict = get_dataset(log, args, args["eval_datasets"], args["eval_dir"], tokenizer, split_name)
+    eval_dataset, eval_dict = get_dataset(log, args, args["eval_datasets"], data_dir_name="eval_dir"
+                                            , tokenizer=tokenizer, split_name=split_name)
     eval_loader = DataLoader(eval_dataset,
                                 batch_size=args["batch_size"],
                                 sampler=SequentialSampler(eval_dataset))
