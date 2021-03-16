@@ -148,7 +148,7 @@ def read_squad(path, save_dir, orig_source=False, kmeans=False, kmeans_file=None
             for qa in passage['qas']:
                 if kmeans:
                     #print ("context: %s" % context) 
-                    topic_id = topic_id_pair[get_hash_str(context)]
+                    topic_id = topic_id_pair.get(get_hash_str(context), -1)
                 add_question_to_dict(qa, context, topic, topic_id, data_dict)
 
     data_dict_collapsed = collapse_data_dict(data_dict)
@@ -159,6 +159,8 @@ def read_squad(path, save_dir, orig_source=False, kmeans=False, kmeans_file=None
 class QADataset(Dataset):
     def __init__(self, encodings, train=True, evaluation=False, test=False):
         self.encodings = encodings
+        self.weights = None
+        self.num_topic = 0
         self.keys = ['input_ids', 'attention_mask']
         if train:
             self.keys += ['topic_id', 'start_positions', 'end_positions']
